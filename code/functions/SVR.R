@@ -1,20 +1,40 @@
 ### SVR Build
-# construct a function to ...
+# This function should be able to take in 'train' datasets, create a regression model to predict the Market Value of a company
+# from the 'test' dataset. This is the main part of the program so it should be flexible in working on it's own or with the
+# implementation of Random Forest and/or Quantum Genetic Algorithm inputs. The function should also both work in testing models
+# and also in practical use.
+
+# "With SVR the stock yield is predicted. The results obtained are yield agent variables of stock yield. We don't need perfect
+# prediction results. The main purpose is to rank the stocks by yield from high to low."
+
 
 ### From Paper:
-# stuff
+# "Different from traditional neural network based on empirical risk minimization, SVM is based on VC dimension of statistical
+# learning theory and the principle of structural risk minimization." -pg 348
+
+# "the goal of SVR is mainly minimize the prediction error, and it is often used in nonlinear regression, problem...SVR has two
+# outstanding characteristics: 1) Based on structural risk minimization principle, regression estimation function is realized,
+# and the gernalization ability of the model is ensured. At the same time, insensitive function is used to estimate the
+# structural risk; 2) Empirical risk minimization is combined with empirical error. The non-robust risk function is derived.
+# In this paper, nonlinear function is mainly used." -pg 349
+
+# "In order to consider the outliers, the slack variables p_i, p_i* are introduced to build optimization problem"
+# "C represents that the error is beyond the tolerance. The greater C is, the more attention is paid to outliers."
+# "eps is the insensitive loss function. The introduction of eps improves the estimation of robustness
+
+# "SVR can introduce the kernel function into low-dimensional nonlinear problem, and change into high dimensional-linear problem."
+# "The kernel function selected in this paper is RBF [radial basis function] kernel function. Kernel paramter is gamma. The
+# selection of gamma has important effect on ernel function. If it is set too high, it is easy to cause excessive fitting of the
+# model. On the contrary, it will cause poor learning promotion ability."
+
 
 ### R libraries
-
-### Final R Code
-### LIBSVM TEST
+#LIBSVM
 # http://www.csie.ntu.edu.tw/~cjlin/libsvm/
 # https://cran.r-project.org/web/packages/e1071/index.html
 install.packages('e1071')
 library(e1071)
-library(rpart) #for testing
 
-### SVM Notes
 # penalty factor C = 10 [cost]
 # radial basis function kernel
 # RBG kernel paramter g = 0.0625 (full model) or 0.058 (RF paramter selection) [gamma]
@@ -26,7 +46,7 @@ library(rpart) #for testing
 #  the better C"
 
 # "Due to the big scope of value range of each index, in order to eliminate the influence of large
-#  value and small value, this paper puts financial characteristic variables into the interval [-1,1]
+#  value and small value, this paper puts financial characteristic variables into the interval [-1,1]"
 
 
 ### SVM FUNCTION
