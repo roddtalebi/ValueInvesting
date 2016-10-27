@@ -1,4 +1,15 @@
 ### Document to play around with RF-QGA-SVR Value Investing Algorithm
+####################
+### SET DIRECTORY
+# Windows
+#myDirectory <- "C:/Users/Rodd/Desktop/ValueInvesting"
+myDirectory <- "C:/Users/rtalebi3/Documents/ValueInvesting"
+
+# OSX
+#myDirectory <- "/Users/Rodd/Desktop/ValueInvesting"
+
+setwd(myDirectory)
+
 
 ####################
 ### INSTALLATION
@@ -13,20 +24,10 @@ source("code/keys.R")
 Quandl.api_key(key)
 
 
-####################
-### SET DIRECTORY
-# Windows
-#myDirectory <- "C:/Users/Rodd/Desktop/ValueInvesting"
-
-# OSX
-myDirectory <- "/Users/Rodd/Desktop/ValueInvesting"
-
-setwd(myDirectory)
-
 
 ####################
 ### GET ENTIRE DATABASE: ZIP -> CSV
-database_code <- "SF0"
+database_code <- "SF1"
 file_path <- paste("data/", database_code, "_dump.zip", sep="")
 
 Quandl.database.bulk_download_to_file(database_code, file_path)
@@ -37,6 +38,24 @@ Quandl.database.bulk_download_to_file(database_code, file_path)
 file <- unzip(file_path, exdir = "./data")
 oriData <- read.csv(file, header=FALSE, col.names = c("Description", "Date", "Value"))
 oriData[,1] <- as.character(oriData[,1])
+
+
+
+#### TEST
+# cut dimension of dataset
+# let's limit is say by year
+dates <- as.character.Date(oriData$Date)
+oriData <- oriData[dates>=2012,]
+
+# goes from 78.5 million rows to
+# 42,131,192 (>=2010)
+# 29,533,302 (>=2012)
+
+
+
+
+
+
 
 # Quarter and year
 getQQ <- function(dt){
@@ -352,6 +371,7 @@ df <- apply(oriData[oriData$Quarter=="Q4",], 1, function(x){
 ### DEFINE MAIN FUNCTION
 set_up <- function(currentYear, fullDF){
   # get top 200 market value tickers for current year
+  # MAYBE DON'T RESTRICT TO TOP STOCKS
   topMV <- fullDF[fullDF$Indicator=="MV",c(Ticker, Value)][order(-Value),]
   top200 <- topMV[1:200,'Ticker']
   
@@ -361,20 +381,51 @@ set_up <- function(currentYear, fullDF){
   testDF <- fullDF[(fullDF$Ticker %in% top200 &
                       fullDF$Year == 1+currentYear),]
   
+  return(list(trainDF, testDF, top200))
 }
 
 
 
 
 ### Call functions
-source("code/functions/SVR.R")
-source("code/functions/RF.R")
-source("code/functions/QGA.R")
+
 
 
 
 
 #######
+### RF-SVR
+install.packages('randomForest')
+library(randomForest)
+source("code/functions/RF.R")
+
+install.packages('e1071')
+library(e1071)
+source("code/functions/QGA.R")
+
+resultsDF <- data.frame(Year=numeric(),
+                        top10=numeric(),
+                        top20=numeric(),
+                        top30=numeric(),
+                        benchmark=numeric())
+
+for (year in years[1:(length(years)-1)]){
+  
+  setupList <- set_up(year, df) #unlist() ?
+  train <- setupList[[1]]
+  test <- setupList[[2]]
+  top200Tickers <- setupList[[3]]
+  
+  indicatorFilter <- model_RF(train, N=100)
+  
+  finalList <- model_svm(train, test, year, indicatorFilter=indicatorFilter)
+  top10return <- ave(finalList[[1]])
+  top20return <- ave(finalList[[2]])
+  top30return <- ave(finalList[[3]])
+  benchmarkReturn <- ave(finalList[[4]])
+  
+  resultsDF <- merge(resultsDF, c(year, top10return, top20return, top30return, benchmarkReturn))
+}
 
 
 
