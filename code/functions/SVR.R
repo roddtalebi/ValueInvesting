@@ -50,7 +50,7 @@ library(e1071)
 
 
 ### SVM FUNCTION
-model_svm <- function(train, test, currentYear, g=0.0625, C=10, p=0.01, indicatorFilter=0){
+model_svm <- function(train, test, currentYear, indicatorFilter=0, g=0.0625, C=10, p=0.01){
   # if RF used then indicators will be filtered from 16 to a smaller number
   if (indicatorFilter != 0){
     keep <- c('Ticker', 'Year', 'nextYearMV', indicatorFilter)
@@ -79,7 +79,7 @@ model_svm <- function(train, test, currentYear, g=0.0625, C=10, p=0.01, indicato
     
   } else{
     # else, the user is checking for model accuracy
-    top10return <- apply(test[1:10,c('Ticker', 'predictedMV')], 1, function(x){
+    top10return <- apply(test[1:10,c('Ticker', 'nextYearMV')], 1, function(x){
       # say the training data goes up to year 'y'==currentYear
       # we want to predict MV for year 'y+1'
       # and get the return rate relative to year 'y'
@@ -90,20 +90,28 @@ model_svm <- function(train, test, currentYear, g=0.0625, C=10, p=0.01, indicato
       return(percReturn)
     })
     
-    top20return <- apply(test[1:20, c('Ticker', 'predictedMV')], 1, function(x){
+    top20return <- apply(test[1:20, c('Ticker', 'nextYearMV')], 1, function(x){
       previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
       actualMV <- x[2]
       percReturn <- (actualMV - previousMV) / previousMV *100
       return(percReturn)
     })
     
-    top30return <- apply(test[1:30, c('Ticker', 'predictedMV')], 1, function(x){
+    top30return <- apply(test[1:30, c('Ticker', 'nextYearMV')], 1, function(x){
       previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
       actualMV <- x[2]
       percReturn <- (actualMV - previousMV) / previousMV *100
       return(percReturn)
     })
     
-    return(list(top10return, top20return, top30return))
+    # get benchmark
+    benchmarkReturn <- apply(test[,c('Ticker', 'nextYearMV')], 1, function(x){
+      previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
+      actualMV <- x[2]
+      percReturn <- (actualMV - previousMV) / previousMV *100
+      return(percReturn)
+    })
+    
+    return(list(top10return, top20return, top30return, benchmarkReturn))
   }
 }
