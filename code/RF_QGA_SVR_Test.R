@@ -23,7 +23,11 @@ library(Quandl)
 source("code/keys.R")
 Quandl.api_key(key)
 
+install.packages("data.table")
+library(data.table)
 
+install.packages("fasttime")
+library(fasttime)
 
 ####################
 ### GET ENTIRE DATABASE: ZIP -> CSV
@@ -36,49 +40,33 @@ Quandl.database.bulk_download_to_file(database_code, file_path)
 ####################
 ### OPEN CSV
 file <- unzip(file_path, exdir = "./data")
-oriData <- read.csv(file, header=FALSE, col.names = c("Description", "Date", "Value"))
-oriData[,1] <- as.character(oriData[,1])
+#oriData <- read.csv(file, header=FALSE, col.names = c("Description", "Date", "Value"))
+#test <- read.csv(file, header=FALSE, col.names=c("Description","Date","Value"), colClasses=c("character","Date","numeric"))
 
+oriData <- as.data.frame(fread(file, header=FALSE, col.names=c("Description","Date","Value")))
+oriData$Date<-fastPOSIXct(oriData$Date)
+oriData$Value<-as.numeric(oriData$Value)
+
+
+gc() # to clean up
+rm() # to remove from membory
+ls() # to see what is using lots of memory
 
 
 #### TEST
 # cut dimension of dataset
 # let's limit is say by year
-dates <- as.character.Date(oriData$Date)
-oriData <- oriData[dates>=2012,]
+#dates <- as.character.Date(oriData$Date)
+oriData <- oriData[year(oriData$Date)>=2012,]
 
 # goes from 78.5 million rows to
 # 42,131,192 (>=2010)
 # 29,533,302 (>=2012)
 
 
+oriData$Year <- year(oriData$Date)
+oriData$Quarter <- quarter(oriData$Date)
 
-
-
-
-
-# Quarter and year
-getQQ <- function(dt){
-  month <- substr(dt, 6,7)
-  
-  if (month %in% c(1,2,3)){
-    qq <- "Q1"
-  } else if (month %in% c(4,5,6)){
-    qq <- "Q2"
-  } else if (month %in% c(7,8,9)){
-    qq <- "Q3"
-  } else {
-    qq <- "Q4"
-  }
-  
-  return(qq)
-}
-
-oriData[,4] <- apply(oriData, 1, function(x) substr(x[2], 1, 4))
-oriData[,5] <- apply(oriData, 1, function(x) getQQ(x[2]))
-
-names(oriData)[4] <- "Year"
-names(oriData)[5] <- "Quarter"
 
 
 ####################
