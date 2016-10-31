@@ -1,8 +1,8 @@
 ### Document to play around with RF-QGA-SVR Value Investing Algorithm
-####################
+
+
 ### SET DIRECTORY
 # Windows
-#myDirectory <- "C:/Users/Rodd/Desktop/ValueInvesting"
 myDirectory <- "C:/Users/rtalebi3/Documents/ValueInvesting"
 
 # OSX
@@ -13,44 +13,26 @@ setwd(myDirectory)
 
 ####################
 ### INSTALLATION
-install.packages("Quandl")
-library(Quandl)
-
-
-####################
-### AUTHENTICATION
-# extract 'key' from file
-source("code/keys.R")
-Quandl.api_key(key)
-
 install.packages("data.table")
-library(data.table)
-
 install.packages("fasttime")
+install.packages("stringr")
+library(data.table)
 library(fasttime)
+library(stringr)
 
-####################
-### GET ENTIRE DATABASE: ZIP -> CSV
-database_code <- "SF1"
-file_path <- paste("data/", database_code, "_dump.zip", sep="")
-
-Quandl.database.bulk_download_to_file(database_code, file_path)
-
-
-####################
-### OPEN CSV
-file <- unzip(file_path, exdir = "./data")
-#oriData <- read.csv(file, header=FALSE, col.names = c("Description", "Date", "Value"))
-#test <- read.csv(file, header=FALSE, col.names=c("Description","Date","Value"), colClasses=c("character","Date","numeric"))
+### load data
+#source("code/functions/quandl_load.R")
+#file <- loadUnzip()
+file <- "./data/SF1_20161031.csv"
 
 oriData <- as.data.frame(fread(file, header=FALSE, col.names=c("Description","Date","Value")))
 oriData$Date<-fastPOSIXct(oriData$Date)
 oriData$Value<-as.numeric(oriData$Value)
 
-
+Sys.sleep(5)
 gc() # to clean up
-rm() # to remove from membory
-ls() # to see what is using lots of memory
+#rm() # to remove from membory
+#ls() # to see what is using lots of memory
 
 
 #### TEST
@@ -65,7 +47,17 @@ oriData <- oriData[year(oriData$Date)>=2012,]
 
 
 oriData$Year <- year(oriData$Date)
+Sys.sleep(5)
+gc()
 oriData$Quarter <- quarter(oriData$Date)
+Sys.sleep(5)
+gc()
+oriData[,c("Ticker","Indicator","Dimension")] <- str_split_fixed(oriData$Description, pattern="_", n=3)
+Sys.sleep(5)
+gc()
+oriData$Reported <- substr(oriData$Dimension, 1, 2)
+oriData$TimeDimension <- substr(oriData$Dimension, 3, 3)
+
 
 
 
@@ -290,7 +282,7 @@ df[,c("NextYearMV","PE","PB","PS","EPS","ROE","ROA","OPM","NPM","DE","ICV","CR",
 
 
 # fill that ish
-df <- apply(oriData[oriData$Quarter=="Q4",], 1, function(x){
+df <- sapply(oriData[oriData$Quarter=="Q4",], 1, function(x){
   ind <- gregexpr('_', x[1])[[1]][1:2]
   ticker <- substr(x[1], 1, ind[1]-1)
   year <- x[4]
