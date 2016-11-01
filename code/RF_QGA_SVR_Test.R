@@ -2,62 +2,17 @@
 
 
 ### SET DIRECTORY
-# Windows
-myDirectory <- "C:/Users/rtalebi3/Documents/ValueInvesting"
-
-# OSX
-#myDirectory <- "/Users/Rodd/Desktop/ValueInvesting"
-
+myDirectory <- "C:/Users/rtalebi3/Documents/ValueInvesting" #Windows
+#myDirectory <- "/Users/Rodd/Desktop/ValueInvesting" #OSX
 setwd(myDirectory)
 
 
-####################
-### INSTALLATION
-install.packages("data.table")
-install.packages("fasttime")
-install.packages("stringr")
-library(data.table)
-library(fasttime)
-library(stringr)
-
-### load data
-#source("code/functions/quandl_load.R")
-#file <- loadUnzip()
+### LOAD DATA
+source("code/functions/quandl_load.R")
+#file <- loadUnzip() #if the data needs to be downloaded
 file <- "./data/SF1_20161031.csv"
 
-oriData <- as.data.frame(fread(file, header=FALSE, col.names=c("Description","Date","Value")))
-oriData$Date<-fastPOSIXct(oriData$Date)
-oriData$Value<-as.numeric(oriData$Value)
-
-Sys.sleep(5)
-gc() # to clean up
-#rm() # to remove from membory
-#ls() # to see what is using lots of memory
-
-
-#### TEST
-# cut dimension of dataset
-# let's limit is say by year
-#dates <- as.character.Date(oriData$Date)
-oriData <- oriData[year(oriData$Date)>=2012,]
-
-# goes from 78.5 million rows to
-# 42,131,192 (>=2010)
-# 29,533,302 (>=2012)
-
-
-oriData$Year <- year(oriData$Date)
-Sys.sleep(5)
-gc()
-oriData$Quarter <- quarter(oriData$Date)
-Sys.sleep(5)
-gc()
-oriData[,c("Ticker","Indicator","Dimension")] <- str_split_fixed(oriData$Description, pattern="_", n=3)
-Sys.sleep(5)
-gc()
-oriData$Reported <- substr(oriData$Dimension, 1, 2)
-oriData$TimeDimension <- substr(oriData$Dimension, 3, 3)
-
+originalDF <- restructure(file)
 
 
 
