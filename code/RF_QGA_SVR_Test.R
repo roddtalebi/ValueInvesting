@@ -12,6 +12,7 @@ source("code/functions/quandl_load.R")
 #file <- loadUnzip() #if the data needs to be downloaded
 file <- "./data/SF1_20161031.csv"
 
+source("code/functions/restructure.R")
 originalDF <- restructure(file)
 
 
