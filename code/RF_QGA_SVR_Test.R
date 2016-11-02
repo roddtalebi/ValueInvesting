@@ -10,10 +10,10 @@ setwd(myDirectory)
 ### LOAD DATA
 source("code/functions/quandl_load.R")
 #file <- loadUnzip() #if the data needs to be downloaded
-file <- "./data/SF1_20161031.csv"
+file <- "./data/SF1_20161102.csv"
 
 source("code/functions/restructure.R")
-originalDF <- restructure(file, rmNA==TRUE)
+originalDF <- restructure(file, rmNA=TRUE)
 
 
 ######
@@ -30,25 +30,35 @@ originalDF <- restructure(file, rmNA==TRUE)
 
 ####################
 ### DEFINE MAIN FUNCTION
-set_up <- function(currentYear, fullDF, topStocks=0){
+set_up <- function(currentYear, df, topStocks=0){
   # get top 200 market value tickers for current year
   # MAYBE DON'T RESTRICT TO TOP STOCKS
-  topMV <- fullDF[fullDF$Indicator=="MV" &
-                    dullDF$Year==currentYear-1,
-                  c(Ticker, Value) ][ order(-Value), 'Ticker ']
+  
+  # "This paper considers financial chracteristics of listed companies as the input variables,
+  # and annual return of stock as response variables."
+  topMV <- df[df$Year==currentYear-1, c("Ticker", "MV")]
+  topMV <- setorder(topMV, -MV)[,'Ticker']
   
   if (topStocks != 0){ # to limit training off only top companies in last year
     topMV <- topMV[1:topStocks]
   }
   
-  trainDF <- fullDF[(fullDF$Ticker %in% topMV &
-                       fullDF$Year <= currentYear),]
+  train <- df[(df$Ticker %in% topMV &
+                       df$Year < currentYear),]
   
-  testDF <- fullDF[(fullDF$Ticker %in% topMV &
-                      fullDF$Year == 1+currentYear),]
+  test <- df[(df$Ticker %in% topMV &
+                      df$Year == currentYear),]
   
-  return(list(trainDF, testDF, topMV[1:200]))
+  # now rm MV
+  ind <- which(names(train)=="MV")
+  
+  return(list(train[,-4], test[,-4], topMV))
 }
+
+list3 <- set_up(currentYear=2016, df=originalDF)
+train <- list3[[1]]
+test <- list3[[2]]
+topMV <- list3[[3]]
 
 
 
@@ -75,22 +85,32 @@ resultsDF <- data.frame(Year=numeric(),
                         top30=numeric(),
                         benchmark=numeric())
 
-for (year in years[1:(length(years)-1)]){
+years <- originalDF$Year[order(unique(originalDF$Year))]
+maxYear <- max(years)
+
+for (year in years[2:(length(years))]){
   
   setupList <- set_up(year, df) #unlist() ?
   train <- setupList[[1]]
   test <- setupList[[2]]
-  top200Tickers <- setupList[[3]]
+  topTickers <- setupList[[3]]
   
-  indicatorFilter <- model_RF(train, N=100)
+  indicatorFilter <- model_RF(train[,-"MV"], N=100)
   
-  finalList <- model_svm(train, test, year, indicatorFilter=indicatorFilter)
-  top10return <- ave(finalList[[1]])
-  top20return <- ave(finalList[[2]])
-  top30return <- ave(finalList[[3]])
-  benchmarkReturn <- ave(finalList[[4]])
-  
-  resultsDF <- merge(resultsDF, c(year, top10return, top20return, top30return, benchmarkReturn))
+  finalList <- model_svm(train, test, year, maxYear=maxYear, indicatorFilter=indicatorFilter)
+  if (currentYear == maxYear){
+    # then the user is expecting the predicted ranking
+    top10 <- finalList[[1]]
+    top20 <- finalList[[2]]
+    top30 <- finalList[[3]]
+  } else {
+    top10return <- ave(finalList[[1]])
+    top20return <- ave(finalList[[2]])
+    top30return <- ave(finalList[[3]])
+    benchmarkReturn <- ave(finalList[[4]])
+    
+    resultsDF <- merge(resultsDF, c(year, top10return, top20return, top30return, benchmarkReturn))
+  }
 }
 
 
