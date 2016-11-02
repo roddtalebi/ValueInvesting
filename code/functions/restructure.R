@@ -32,7 +32,7 @@ restructure <- function(file, rmNA=TRUE){
   Sys.sleep(5)
   gc() # to clean up
   
-  oriData <- oriData[year(oriData$Date)>=2012,] #trim data frame
+  oriData <- oriData[year(oriData$Date)>=2011,] #trim data frame
   # goes from 78.5 million rows to
   # 42,131,192 (>=2010)
   # 29,533,302 (>=2012)
@@ -43,43 +43,14 @@ restructure <- function(file, rmNA=TRUE){
   gc()
   
   oriData$Quarter <- quarter(oriData$Date) #get quarter column...Q#
-  Sys.sleep(5)
+  Sys.sleep(30)
   gc()
   
   
-  ### TESTing
-  split1 <- dim(oriData)[1] / 4
-  split2 <- split1 * 2
-  split3 <- split1 * 3
-  split4 <- dim(oriData)[1]
-  
-  p1 <- str_split_fixed(oriData[1:split1, 'Description'], pattern="_", n=3)
-  oriData[1:split1, c("Ticker","Indicator","Dimension")] <- p1
+  ### ACTUAL
+  oriData[,c("Ticker","Indicator","Dimension")] <- str_split_fixed(oriData$Description, pattern="_", n=3) #seperate description col into 3 cols deliminated by '_'
   Sys.sleep(5)
-  rm(p1)
   gc()
-  
-  p2 <- str_split_fixed(oriData[split1+1:split2, 'Description'], pattern="_", n=3)
-  oriData[split1+1:split2, c("Ticker","Indicator","Dimension")] <- p2
-  Sys.sleep(5)
-  rm(p2)
-  gc()
-  
-  p3 <- str_split_fixed(oriData[split2+1:split3, 'Description'], pattern="_", n=3)
-  oriData[split2+1:split3, c("Ticker","Indicator","Dimension")] <- p3
-  Sys.sleep(5)
-  rm(p3)
-  gc()
-  
-  p4 <- str_split_fixed(oriData[split3+1:split4, 'Description'], pattern="_", n=3)
-  oriData[split3+1:split4, c("Ticker","Indicator","Dimension")] <- p4
-  Sys.sleep(5)
-  rm(p4)
-  gc()
-  
-  #oriData[,c("Ticker","Indicator","Dimension")] <- str_split_fixed(oriData$Description, pattern="_", n=3) #seperate description col into 3 cols deliminated by '_'
-  #Sys.sleep(5)
-  #gc()
   
   
   #seperate dimension col into the 'reported' type and time dimension
@@ -118,23 +89,25 @@ restructure <- function(file, rmNA=TRUE){
   
   
   ### now reformat to the syntax of the paper
-  names[which(names(df)=="PS1")] <- "PS"
+  names(df)[which(names(df)=="PS1")] <- "PS"
   df$OPM <- df$OPINC / df$REVENUE
-  names[which(names(df)=="NETMARGIN")] <- "NPM"
+  names(df)[which(names(df)=="NETMARGIN")] <- "NPM"
   df$ICV <- df$EBITDA / df$INTEXP
-  names[which(names(df)=="CURRENTRATIO")] <- "CR"
+  names(df)[which(names(df)=="CURRENTRATIO")] <- "CR"
   df$QR <- (df$ASSETSC - df$INVENTORY) / df$LIABILITIESC
   df$ITR <- df$COR / df$INVENTORY
   df$RTR <- df$OPINC / df$RECEIVABLES
-  names[which(names(df)=="REVENUEGROWTH1YR")] <- "OIG"
+  names(df)[which(names(df)=="REVENUEGROWTH1YR")] <- "OIG"
   
   #NIG
   df$NIG <- NA
   df$NIG <- apply(df[,c("Ticker", "Year", "NETINC", "NIG")], 1, function(x, df){
-    prevInc <- df[df$Ticker==x[1] & dfYear==x[2]-1, 'NETINC']
-    x[4] <- (x[3] - prevInc) / prevInc
-    return(x)
-  })
+    prevInc <- df[df$Ticker==x[1] & df$Year==as.numeric(x[2])-1, 'NETINC']
+    if (length(prevInc) != 0){
+      x[4] <- (as.numeric(x[3]) - prevInc) / prevInc
+    }
+    return(x[4])
+  },df<-df)
   
   #MV
   df$MV <- df$SHARESBAS * df$PRICE
@@ -149,23 +122,35 @@ restructure <- function(file, rmNA=TRUE){
   # USE MV TO RANK COMPANIES
   # BUT USE STOCK PRICE AS RESPONSE...
   # "This paper considers financial chracteristics of listed companies as the input variables,
-  # and annual return of stock as response variables. so do
+  # and annual return of stock as response variables."
   
   #return of stock [response]
-  df$return <- NA
-  df$return <- apply(df[,c("Ticker", "Year", "PRICE", "return")], 1, function(x, df){
-    prevPrice <- df[df$Ticker==x[1] & dfYear==x[2]-1, 'PRICE']
-    x[4] <- (x[3] - prevPrice) / prevPrice
-    return(x)
-  })
   
-  wantList <- c("Ticker","Year","return","MV","PE","PB","PS","EPS","ROE","ROA","OPM","NPM","DE","ICV","CR","QR","ITR","RTR","OIG","NIG")
+  #?#?????!?!?!!!!!!!!\
+  # FIX THIS SO THAT DATA FROM CURRENTYEAR-1 CORRESPONDS TO RETURN FOR CURRENTYEAR
+  df$Return <- NA
+  df$Return <- apply(df[,c("Ticker", "Year", "PRICE", "Return")], 1, function(x, df){
+    futurePrice <- df[df$Ticker==x[1] & df$Year==as.numeric(x[2])+1, 'PRICE']
+    if (length(prevPrice != 0)){
+      x[4] <- (futurePrice - as.numeric(x[3])) / as.numeric(x[3])
+    }
+    return(x[4])
+  }, df<-df)
+  
+  wantList <- c("Ticker","Year","Return","MV","PE","PB","PS","EPS","ROE","ROA","OPM","NPM","DE","ICV","CR","QR","ITR","RTR","OIG","NIG")
   df <- df[,wantList]
   
   
   if (rmNA==TRUE){
-    colNAs <- apply(df, 1, function(x){length(which(is.na(x)))})
-    df <- df[colNAs==0,]
+    colNA <- apply(df, 1, function(x){length(which(is.na(x)))})
+    #length(which(colNA==0))
+    #length(colNA)-length(which(colNA==0))
+    
+    # what to do about inf????? ICV
+    #colInf <- apply(df, 1, function(x){length(which(x==Inf))})
+    
+    
+    df <- df[colNA==0,]
   }
   
   return(df)
