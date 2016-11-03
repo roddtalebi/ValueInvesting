@@ -32,8 +32,8 @@
 #LIBSVM
 # http://www.csie.ntu.edu.tw/~cjlin/libsvm/
 # https://cran.r-project.org/web/packages/e1071/index.html
-install.packages('e1071')
-library(e1071)
+#install.packages('e1071')
+#library(e1071)
 
 # penalty factor C = 10 [cost]
 # radial basis function kernel
@@ -56,16 +56,17 @@ model_svm <- function(train, test, currentYear, maxYear=2016, indicatorFilter=0,
   
   # if RF used then indicators will be filtered from 16 to a smaller number
   if (indicatorFilter != 0){
+    print("yes")
     keep <- c('Ticker', 'Year', 'Return', indicatorFilter)
     train <- train[,keep]
   }
   
   
-  modelSVM <- svm(Return, . -Year -Ticker,
+  modelSVM <- svm(Return ~ . -Year -Ticker,
                   data=train,
                   scale=TRUE,
                   type='eps-regression',
-                  kernel='radial basis',
+                  kernel='radial',
                   gamma=g,
                   cost=C)
   

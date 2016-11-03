@@ -31,8 +31,8 @@
 # that the importance is above 0.35 can guarantee that we get the strong features."
 
 ### R libraries
-install.packages('randomForest')
-library(randomForest)
+#install.packages('randomForest')
+#library(randomForest)
 
 # "importance: a matrix with two (for regression) columns...For regression, the first column is the mean decrease in accuracy, and the
 # second the mean decrease in MSE. If importance=FALSE, the last measure is still returned as a vector."
@@ -53,7 +53,10 @@ N = 1000 #???
 m = 5
 
 model_RF <- function(train, N=1000, m=5){
-  modelRF <- randomForest(nextYearMV ~ . -Year -Ticker,
+  install.packages('randomForest')
+  library(randomForest)
+  
+  modelRF <- randomForest(Return ~ . -Year -Ticker,
                           data=train,
                           ntree=N,
                           mtry=m,
