@@ -83,9 +83,9 @@ restructure <- function(file, rmNA=TRUE){
   # cast a molten data frame...take every unique indicator and make a column for each. fill with the respective value.
   df <- cast(filterData, Ticker + Year ~ Indicator, value="Value")
   
-  rm(oriData, filterData, dubs)
-  Sys.sleep(5)
-  gc()
+  #rm(oriData, filterData, dubs)
+  #Sys.sleep(5)
+  #gc()
   
   
   ### now reformat to the syntax of the paper
@@ -106,7 +106,7 @@ restructure <- function(file, rmNA=TRUE){
     if (length(prevInc) != 0){
       x[4] <- (as.numeric(x[3]) - prevInc) / prevInc
     }
-    return(x[4])
+    return(as.numeric(x[4]))
   },df<-df)
   
   #MV
@@ -131,10 +131,10 @@ restructure <- function(file, rmNA=TRUE){
   df$Return <- NA
   df$Return <- apply(df[,c("Ticker", "Year", "PRICE", "Return")], 1, function(x, df){
     futurePrice <- df[df$Ticker==x[1] & df$Year==as.numeric(x[2])+1, 'PRICE']
-    if (length(prevPrice != 0)){
-      x[4] <- (futurePrice - as.numeric(x[3])) / as.numeric(x[3])
+    if (length(futurePrice != 0) & is.na(x[3])==FALSE){
+      x[4] <- (futurePrice - as.numeric(x[3])) / as.numeric(x[3]) * 100
     }
-    return(x[4])
+    return(as.numeric(x[4]))
   }, df<-df)
   
   wantList <- c("Ticker","Year","Return","MV","PE","PB","PS","EPS","ROE","ROA","OPM","NPM","DE","ICV","CR","QR","ITR","RTR","OIG","NIG")
@@ -145,12 +145,12 @@ restructure <- function(file, rmNA=TRUE){
     colNA <- apply(df, 1, function(x){length(which(is.na(x)))})
     #length(which(colNA==0))
     #length(colNA)-length(which(colNA==0))
+    df <- df[colNA==0,]
     
     # what to do about inf????? ICV
     #colInf <- apply(df, 1, function(x){length(which(x==Inf))})
-    
-    
-    df <- df[colNA==0,]
+    ind <- which(names(df) %in% c("Ticker", "Year","Return"))
+    df <- df[is.finite(rowSums(df[,-ind])),]
   }
   
   return(df)

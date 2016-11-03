@@ -10,10 +10,16 @@ setwd(myDirectory)
 ### LOAD DATA
 source("code/functions/quandl_load.R")
 #file <- loadUnzip() #if the data needs to be downloaded
-file <- "./data/SF1_20161102.csv"
+file <- "./data/SF1_20161103.csv"
 
 source("code/functions/restructure.R")
 originalDF <- restructure(file, rmNA=TRUE)
+
+#originalDF[,-1] <- sapply(originalDF[,-1], as.numeric)
+
+tmp <- as.data.frame(sapply(originalDF, as.numeric))
+tmp$Ticker <- originalDF$Ticker
+originalDF <- tmp
 
 
 ######
@@ -55,14 +61,6 @@ set_up <- function(currentYear, df, topStocks=0){
   return(list(train[,-4], test[,-4], topMV))
 }
 
-list3 <- set_up(currentYear=2016, df=originalDF)
-train <- list3[[1]]
-test <- list3[[2]]
-topMV <- list3[[3]]
-
-
-
-
 ### Call functions
 
 
@@ -71,13 +69,13 @@ topMV <- list3[[3]]
 
 #######
 ### RF-SVR
-install.packages('randomForest')
-library(randomForest)
+#install.packages('randomForest')
+#library(randomForest)
 source("code/functions/RF.R")
 
-install.packages('e1071')
-library(e1071)
-source("code/functions/QGA.R")
+#install.packages('e1071')
+#library(e1071)
+source("code/functions/SVR.R")
 
 resultsDF <- data.frame(Year=numeric(),
                         top10=numeric(),
@@ -90,12 +88,12 @@ maxYear <- max(years)
 
 for (year in years[2:(length(years))]){
   
-  setupList <- set_up(year, df) #unlist() ?
+  setupList <- set_up(year, df, topStocks=200) #unlist() ?
   train <- setupList[[1]]
   test <- setupList[[2]]
   topTickers <- setupList[[3]]
   
-  indicatorFilter <- model_RF(train[,-"MV"], N=100)
+  indicatorFilter <- model_RF(train, N=1000)
   
   finalList <- model_svm(train, test, year, maxYear=maxYear, indicatorFilter=indicatorFilter)
   if (currentYear == maxYear){
