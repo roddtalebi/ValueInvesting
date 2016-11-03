@@ -9,6 +9,10 @@ loadUnzip <- function(){
   source("code/keys.R")
   Quandl.api_key(key)
   
+  
+  # make the directory (won't overwrite if it already exists)
+  dir.create("data/", showWarnings = FALSE)
+  
   ### GET ENTIRE DATABASE: ZIP -> CSV
   database_code <- "SF1"
   file_path <- paste("data/", database_code, "_dump.zip", sep="")

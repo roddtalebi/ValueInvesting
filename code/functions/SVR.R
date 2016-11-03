@@ -50,15 +50,18 @@ library(e1071)
 
 
 ### SVM FUNCTION
-model_svm <- function(train, test, currentYear, indicatorFilter=0, g=0.0625, C=10, p=0.01){
+model_svm <- function(train, test, currentYear, maxYear=2016, indicatorFilter=0, g=0.0625, C=10, p=0.01){
+  install.packages('e1071')
+  library(e1071)
+  
   # if RF used then indicators will be filtered from 16 to a smaller number
   if (indicatorFilter != 0){
-    keep <- c('Ticker', 'Year', 'nextYearMV', indicatorFilter)
+    keep <- c('Ticker', 'Year', 'Return', indicatorFilter)
     train <- train[,keep]
   }
   
   
-  modelSVM <- svm(nextYearMV, . -Year -Ticker,
+  modelSVM <- svm(Return, . -Year -Ticker,
                   data=train,
                   scale=TRUE,
                   type='eps-regression',
@@ -66,8 +69,8 @@ model_svm <- function(train, test, currentYear, indicatorFilter=0, g=0.0625, C=1
                   gamma=g,
                   cost=C)
   
-  test$predictedMV <- predict(modelSVM, test)
-  test <- test[order(-predictedMV),] # rank by predicted MV
+  test$predictedReturn <- predict(modelSVM, test)
+  test <- test[order(-predictedReturn),] # rank by predicted MV
   
   top10 <- test[1:10, 'Ticker']
   top20 <- test[1:20, 'Ticker']
@@ -79,7 +82,7 @@ model_svm <- function(train, test, currentYear, indicatorFilter=0, g=0.0625, C=1
     
   } else{
     # else, the user is checking for model accuracy
-    top10return <- apply(test[1:10,c('Ticker', 'nextYearMV')], 1, function(x){
+    top10return <- apply(test[1:10,c('Ticker', 'Return')], 1, function(x){
       # say the training data goes up to year 'y'==currentYear
       # we want to predict MV for year 'y+1'
       # and get the return rate relative to year 'y'
