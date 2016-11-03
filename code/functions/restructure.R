@@ -145,12 +145,11 @@ restructure <- function(file, rmNA=TRUE){
     colNA <- apply(df, 1, function(x){length(which(is.na(x)))})
     #length(which(colNA==0))
     #length(colNA)-length(which(colNA==0))
+    df <- df[colNA==0,]
     
     # what to do about inf????? ICV
     #colInf <- apply(df, 1, function(x){length(which(x==Inf))})
-    
-    
-    df <- df[colNA==0,]
+    df <- df[is.finite(rowSums(df)),]
   }
   
   return(df)

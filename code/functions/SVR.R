@@ -70,7 +70,8 @@ model_svm <- function(train, test, currentYear, maxYear=2016, indicatorFilter=0,
                   cost=C)
   
   test$predictedReturn <- predict(modelSVM, test)
-  test <- test[order(-predictedReturn),] # rank by predicted MV
+  #test <- test[order(-predictedReturn),] # rank by predicted MV
+  setorder(test, -predictedReturn) # rank by predicted rate of return
   
   top10 <- test[1:10, 'Ticker']
   top20 <- test[1:20, 'Ticker']
@@ -82,38 +83,43 @@ model_svm <- function(train, test, currentYear, maxYear=2016, indicatorFilter=0,
     
   } else{
     # else, the user is checking for model accuracy
-    top10return <- apply(test[1:10,c('Ticker', 'Return')], 1, function(x){
+    top10return <- test[1:10, 'Return']
+    top20return <- test[1:20, 'Return']
+    top30return <- test[1:30, 'Return']
+    
+    
+    #top10return <- apply(test[1:10,c('Ticker', 'Return')], 1, function(x){
       # say the training data goes up to year 'y'==currentYear
-      # we want to predict MV for year 'y+1'
-      # and get the return rate relative to year 'y'
-      # the MV for year 'y' is listed with the financial data for year 'y-1'
-      previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
-      actualMV <- x[2]
-      percReturn <- (actualMV - previousMV) / previousMV *100
-      return(percReturn)
-    })
+      # we want to predict Annual Rate of Return for year 'y+1'
+      #previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
+      #actualMV <- x[2]
+      #percReturn <- (actualMV - previousMV) / previousMV *100
+      #return(percReturn)
+    #})
     
-    top20return <- apply(test[1:20, c('Ticker', 'nextYearMV')], 1, function(x){
-      previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
-      actualMV <- x[2]
-      percReturn <- (actualMV - previousMV) / previousMV *100
-      return(percReturn)
-    })
+    #top20return <- apply(test[1:20, c('Ticker', 'nextYearMV')], 1, function(x){
+      #previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
+      #actualMV <- x[2]
+      #percReturn <- (actualMV - previousMV) / previousMV *100
+      #return(percReturn)
+    #})
     
-    top30return <- apply(test[1:30, c('Ticker', 'nextYearMV')], 1, function(x){
-      previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
-      actualMV <- x[2]
-      percReturn <- (actualMV - previousMV) / previousMV *100
-      return(percReturn)
-    })
+    #top30return <- apply(test[1:30, c('Ticker', 'nextYearMV')], 1, function(x){
+      #previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
+      #actualMV <- x[2]
+      #percReturn <- (actualMV - previousMV) / previousMV *100
+      #return(percReturn)
+    #})
     
     # get benchmark
-    benchmarkReturn <- apply(test[,c('Ticker', 'nextYearMV')], 1, function(x){
-      previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
-      actualMV <- x[2]
-      percReturn <- (actualMV - previousMV) / previousMV *100
-      return(percReturn)
-    })
+    benchmarkReturn <- test[1:200, 'Return'] #how to properly define the benchmark?
+    
+    #benchmarkReturn <- apply(test[,c('Ticker', 'nextYearMV')], 1, function(x){
+      #previousMV <- train[train$Ticker==x[1] & train$Year==currentYear-1, 'nextYearMV']
+      #actualMV <- x[2]
+      #percReturn <- (actualMV - previousMV) / previousMV *100
+      #return(percReturn)
+    #})
     
     return(list(top10return, top20return, top30return, benchmarkReturn))
   }
